@@ -9,6 +9,14 @@ public sealed class Booking
 
     public const int MaxActiveBookingsPerParticipantPerDay = 2;
 
+    // R10: rooms with capacity > LargeRoomCapacityThreshold have a shorter maximum duration.
+    public const int LargeRoomCapacityThreshold = 10;
+
+    public static readonly TimeSpan MaxDurationForLargeRoom = TimeSpan.FromHours(2);
+
+    // R11: minimum notice before the start for a cancellation.
+    public static readonly TimeSpan MinCancellationNotice = TimeSpan.FromMinutes(60);
+
     // Used by EF Core.
     private Booking()
     {
@@ -85,7 +93,11 @@ public sealed class Booking
         if (interval.StartUtc < nowUtc)
             return BookingErrors.StartInPast;
 
-        // R6: exactly 4 hours is allowed
+        // R10: capacity > 10 -> at most 2 hours (exactly 2 hours is allowed)
+        if (room.Capacity > LargeRoomCapacityThreshold && interval.Duration > MaxDurationForLargeRoom)
+            return BookingErrors.TooLongForLargeRoom;
+
+        // R6: capacity <= 10 keeps the 4-hour limit (exactly 4 hours is allowed)
         if (interval.Duration > MaxDuration)
             return BookingErrors.TooLong;
 
@@ -110,11 +122,17 @@ public sealed class Booking
         return new Booking(Guid.NewGuid(), room.Id, participant, interval, attendees.Value);
     }
 
-    /// <summary>R8: Active -> Cancelled; cancelling twice is a conflict.</summary>
-    public Result<Unit> Cancel()
+    /// <summary>
+    /// R8: Active -> Cancelled; cancelling twice is a conflict.
+    /// R11: allowed only if the booking starts at least 60 minutes after <paramref name="nowUtc"/>.
+    /// </summary>
+    public Result<Unit> Cancel(DateTime nowUtc)
     {
         if (Status == BookingStatus.Cancelled)
             return BookingErrors.AlreadyCancelled;
+
+        if (StartUtc - nowUtc < MinCancellationNotice)
+            return BookingErrors.TooLateToCancel;
 
         Status = BookingStatus.Cancelled;
         return Unit.Value;

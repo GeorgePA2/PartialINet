@@ -25,6 +25,9 @@ public static class BookingErrors
     public static readonly Error TooLong =
         Error.Validation("Booking.TooLong", "A booking can last at most 4 hours.");
 
+    public static readonly Error TooLongForLargeRoom =
+        Error.Validation("Booking.TooLongForLargeRoom", "Rooms with a capacity greater than 10 can be booked for at most 2 hours.");
+
     public static readonly Error Overlap =
         Error.Conflict("Booking.Overlap", "The room already has an active booking in this interval.");
 
@@ -33,6 +36,9 @@ public static class BookingErrors
 
     public static readonly Error AlreadyCancelled =
         Error.Conflict("Booking.AlreadyCancelled", "The booking is already cancelled.");
+
+    public static readonly Error TooLateToCancel =
+        Error.Conflict("Booking.TooLateToCancel", "A booking can be cancelled only if it starts at least 60 minutes from now.");
 
     public static Error NotFound(Guid id) =>
         Error.NotFound("Booking.NotFound", $"The booking '{id}' does not exist.");

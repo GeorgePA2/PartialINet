@@ -206,3 +206,42 @@ POST {{baseUrl}}/api/v1/rooms/{{roomId}}/bookings
 Content-Type: application/json
 
 { "bookedBy": "maria", "startUtc": "2030-03-01T22:00:00Z", "endUtc": "2030-03-01T23:00:00Z", "attendees": 2 }
+
+### 36. R10: large room (capacity 20)
+# @name largeRoom
+POST {{baseUrl}}/api/v1/rooms
+Content-Type: application/json
+
+{ "name": "Big hall", "capacity": 20 }
+
+###
+@largeRoomId = {{largeRoom.response.body.$.id}}
+
+### 37. R10: large room, exactly 2 hours (201)
+POST {{baseUrl}}/api/v1/rooms/{{largeRoomId}}/bookings
+Content-Type: application/json
+
+{ "bookedBy": "paul", "startUtc": "2030-04-01T08:00:00Z", "endUtc": "2030-04-01T10:00:00Z", "attendees": 15 }
+
+### 38. R10: large room, more than 2 hours (400)
+POST {{baseUrl}}/api/v1/rooms/{{largeRoomId}}/bookings
+Content-Type: application/json
+
+{ "bookedBy": "paul", "startUtc": "2030-04-02T08:00:00Z", "endUtc": "2030-04-02T10:00:01Z", "attendees": 15 }
+
+### 39. R10: room with capacity 10 still allows 3 hours (201)
+POST {{baseUrl}}/api/v1/rooms/{{roomId}}/bookings
+Content-Type: application/json
+
+{ "bookedBy": "paul", "startUtc": "2030-04-03T08:00:00Z", "endUtc": "2030-04-03T11:00:00Z", "attendees": 4 }
+
+### 40. R11: booking that starts in ~30 minutes (VS Code REST Client dynamic dates)
+# @name soonBooking
+POST {{baseUrl}}/api/v1/rooms/{{largeRoomId}}/bookings
+Content-Type: application/json
+
+{ "bookedBy": "rita", "startUtc": "{{$datetime iso8601 30 m}}", "endUtc": "{{$datetime iso8601 90 m}}", "attendees": 2 }
+
+### 41. R11: cancel less than 60 minutes before start (409)
+@soonBookingId = {{soonBooking.response.body.$.id}}
+POST {{baseUrl}}/api/v1/bookings/{{soonBookingId}}/cancel
