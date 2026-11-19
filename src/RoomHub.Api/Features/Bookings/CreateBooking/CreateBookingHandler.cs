@@ -26,7 +26,16 @@ public sealed class CreateBookingHandler(
         // 3. Data the domain needs for R7.
         var activeBookings = await bookings.GetActiveForRoomAsync(room.Id, cancellationToken);
 
-        // 4. The domain applies R2–R7.
+        // 3b. Data the domain needs for R9 (only when the input can be valid; the domain validates R2/R3).
+        IReadOnlyList<Booking> participantBookings = [];
+        if (!string.IsNullOrWhiteSpace(command.BookedBy) && command.StartUtc is not null)
+        {
+            var dayStartUtc = DateTime.SpecifyKind(command.StartUtc.Value.Date, DateTimeKind.Utc);
+            participantBookings = await bookings.GetActiveForParticipantOnDayAsync(
+                command.BookedBy.Trim(), dayStartUtc, cancellationToken);
+        }
+
+        // 4. The domain applies R2–R7 and R9.
         var bookingResult = Booking.Create(
             room,
             command.BookedBy,
@@ -34,7 +43,8 @@ public sealed class CreateBookingHandler(
             command.EndUtc,
             command.Attendees,
             nowUtc,
-            activeBookings);
+            activeBookings,
+            participantBookings);
 
         if (bookingResult.IsFailure)
             return bookingResult.Error;

@@ -7,6 +7,8 @@ public sealed class Booking
 {
     public static readonly TimeSpan MaxDuration = TimeSpan.FromHours(4);
 
+    public const int MaxActiveBookingsPerParticipantPerDay = 2;
+
     // Used by EF Core.
     private Booking()
     {
@@ -46,6 +48,7 @@ public sealed class Booking
     /// Creates a booking for <paramref name="room"/> applying R2–R7.
     /// <paramref name="existingBookings"/> must contain the bookings of this room that can conflict
     /// (the domain itself keeps only the active ones of the same room).
+    /// <paramref name="participantBookings"/> must contain the active bookings of the same bookedBy (R9).
     /// </summary>
     public static Result<Booking> Create(
         Room room,
@@ -54,7 +57,8 @@ public sealed class Booking
         DateTime? endUtc,
         int? attendees,
         DateTime nowUtc,
-        IEnumerable<Booking> existingBookings)
+        IEnumerable<Booking> existingBookings,
+        IEnumerable<Booking> participantBookings)
     {
         // R2
         if (string.IsNullOrWhiteSpace(bookedBy))
@@ -92,7 +96,18 @@ public sealed class Booking
         if (overlaps)
             return BookingErrors.Overlap;
 
-        return new Booking(Guid.NewGuid(), room.Id, bookedBy.Trim(), interval, attendees.Value);
+        // R9: at most 2 active bookings per participant per UTC day of startUtc, across all rooms.
+        var participant = bookedBy.Trim();
+        var day = interval.StartUtc.Date;
+        var activeSameDay = participantBookings.Count(b =>
+            b.IsActive
+            && string.Equals(b.BookedBy, participant, StringComparison.Ordinal)
+            && b.StartUtc.Date == day);
+
+        if (activeSameDay >= MaxActiveBookingsPerParticipantPerDay)
+            return BookingErrors.ParticipantDailyLimit;
+
+        return new Booking(Guid.NewGuid(), room.Id, participant, interval, attendees.Value);
     }
 
     /// <summary>R8: Active -> Cancelled; cancelling twice is a conflict.</summary>

@@ -156,4 +156,53 @@ Content-Type: application/json
 ### 27. Unversioned route must NOT work (404)
 GET {{baseUrl}}/api/rooms/{{roomId}}
 
-### 28. New requirement (minute 35): add requests here
+### 28. R9: second room for the participant test
+# @name createRoom2
+POST {{baseUrl}}/api/v1/rooms
+Content-Type: application/json
+
+{ "name": "Study room 2", "capacity": 5 }
+
+###
+@room2Id = {{createRoom2.response.body.$.id}}
+
+### 29. R9: 1st active booking of "maria" on 2030-03-01 (201)
+POST {{baseUrl}}/api/v1/rooms/{{roomId}}/bookings
+Content-Type: application/json
+
+{ "bookedBy": "maria", "startUtc": "2030-03-01T08:00:00Z", "endUtc": "2030-03-01T09:00:00Z", "attendees": 2 }
+
+### 30. R9: 2nd, other room, same day (201)
+# @name maria2
+POST {{baseUrl}}/api/v1/rooms/{{room2Id}}/bookings
+Content-Type: application/json
+
+{ "bookedBy": "maria", "startUtc": "2030-03-01T10:00:00Z", "endUtc": "2030-03-01T11:00:00Z", "attendees": 2 }
+
+### 31. R9: 3rd same day, any room (409)
+POST {{baseUrl}}/api/v1/rooms/{{roomId}}/bookings
+Content-Type: application/json
+
+{ "bookedBy": "maria", "startUtc": "2030-03-01T22:00:00Z", "endUtc": "2030-03-01T23:00:00Z", "attendees": 2 }
+
+### 32. R9: different day, ends past midnight but starts on 03-02 (201)
+POST {{baseUrl}}/api/v1/rooms/{{roomId}}/bookings
+Content-Type: application/json
+
+{ "bookedBy": "maria", "startUtc": "2030-03-02T00:00:00Z", "endUtc": "2030-03-02T01:00:00Z", "attendees": 2 }
+
+### 33. R9: other participant same day (201)
+POST {{baseUrl}}/api/v1/rooms/{{roomId}}/bookings
+Content-Type: application/json
+
+{ "bookedBy": "ion", "startUtc": "2030-03-01T12:00:00Z", "endUtc": "2030-03-01T13:00:00Z", "attendees": 2 }
+
+### 34. R9: cancel maria's 2nd booking (204)
+@maria2Id = {{maria2.response.body.$.id}}
+POST {{baseUrl}}/api/v1/bookings/{{maria2Id}}/cancel
+
+### 35. R9: cancelled ones don't count -> 3rd attempt now allowed (201)
+POST {{baseUrl}}/api/v1/rooms/{{roomId}}/bookings
+Content-Type: application/json
+
+{ "bookedBy": "maria", "startUtc": "2030-03-01T22:00:00Z", "endUtc": "2030-03-01T23:00:00Z", "attendees": 2 }

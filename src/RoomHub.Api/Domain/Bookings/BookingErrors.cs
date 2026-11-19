@@ -28,6 +28,9 @@ public static class BookingErrors
     public static readonly Error Overlap =
         Error.Conflict("Booking.Overlap", "The room already has an active booking in this interval.");
 
+    public static readonly Error ParticipantDailyLimit =
+        Error.Conflict("Booking.ParticipantDailyLimit", "A participant cannot have more than 2 active bookings on the same UTC day.");
+
     public static readonly Error AlreadyCancelled =
         Error.Conflict("Booking.AlreadyCancelled", "The booking is already cancelled.");
 
