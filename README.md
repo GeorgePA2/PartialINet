@@ -5,10 +5,11 @@ Read `ASSIGNMENT.md` before anything else.
 ## Run
 
 ```bash
+dotnet build            # from the repo root (uses RoomHub.sln)
 dotnet run --project src/RoomHub.Api
 ```
 
-The application starts on `http://localhost:5090`. The test requests are in `roomhub.http`
+The application starts on `http://localhost:5090`. The test requests are in `src/RoomHub.Api/roomhub.http`
 (you can run them from Rider, or from VS Code with the REST Client extension).
 
 ## How to start
